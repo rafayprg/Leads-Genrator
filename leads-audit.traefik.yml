@@ -1,0 +1,17 @@
+# TechDeva Audit Platform on leads.techdeva.net (compose project techdeva-audit in /opt/techdeva-audit)
+http:
+  routers:
+    leads-audit:
+      rule: "Host(`leads.techdeva.net`)"
+      entryPoints:
+        - websecure
+      service: leads-audit-svc
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: leads.techdeva.net
+  services:
+    leads-audit-svc:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8095"

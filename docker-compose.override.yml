@@ -1,0 +1,5 @@
+# VPS only: lets the backend reach Harvey on this host over SSH with a key that /opt/harvey-bridge-guard.py restricts.
+services:
+  backend:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["./harvey_key:/app/harvey_key:ro"]

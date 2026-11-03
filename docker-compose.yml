@@ -1,0 +1,36 @@
+# Local or server run with PostgreSQL. Not used on the laptop (no Docker there); see DEPLOY.md.
+# A separate compose project: never merge it into the TechDeva/InstantGrill compose on the VPS.
+name: techdeva-audit
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: audit
+      POSTGRES_USER: audit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit -d audit"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://audit:${POSTGRES_PASSWORD}@db:5432/audit
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+    # backend/.env is mounted so accounts and AI keys added in the dashboard are saved (it writes that file)
+    volumes: [artifacts:/app/data, ./backend/.env:/app/.env]
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:${WEB_PORT:-8080}:80"]   # only this machine; put HTTPS (e.g. Caddy) in front on a server
+    depends_on: [backend]
+    restart: unless-stopped
+volumes:
+  dbdata:
+  artifacts:
